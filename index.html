@@ -1,0 +1,93 @@
+<html lang="en">
+  <script>
+    const API_URL = "https://resite.vinhowe.workers.dev";
+    const GITHUB_REPO = "vinhowe/resite-pages";
+    async function sendCommand() {
+      const inputElement = document.getElementById("input");
+      const command = inputElement.value;
+      const commandResponse = await fetch(`${API_URL}/command`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          htmlBody: window.__resiteSource,
+          history: window.__resiteHistory,
+          command,
+        }),
+      });
+      // Handle error
+      if (!commandResponse.ok) {
+        const { error } = await commandResponse.json();
+        inputElement.value = error;
+        return;
+      }
+      let { code } = await commandResponse.json();
+      // Find longest line of code and pad all lines to that length
+      const lines = code.split("\n");
+      console.log(
+        `Executing function to update page:\n%c${code}`,
+        "color: white; background:black;"
+      );
+      // Execute code (brilliant!)
+      eval(code);
+      // Update __resiteSource to reflect changes (use XMLSerializer to convert DOM to string)
+      window.__resiteSource = document.documentElement.outerHTML;
+      // Update __resiteHistory
+      window.__resiteHistory.push({ command, code });
+
+      const uploadResponse = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          htmlBody: window.__resiteSource,
+          command,
+          branch: window.__resiteBranch,
+        }),
+      });
+
+      if (!uploadResponse.ok) {
+        const { error } = await uploadResponse.json();
+        inputElement.value = error;
+        return;
+      }
+
+      const { branch } = await uploadResponse.json();
+      window.__resiteBranch = branch;
+      window.history.pushState({}, "", `/${branch}`);
+    }
+
+    async function setupPage() {
+      window.__resiteHistory = [];
+      // Get ref from url (localhost:500/{ref}) (use window.location.pathname)
+      const branch = window.location.pathname.split("/")[1];
+      window.__resiteBranch = branch || null;
+      let html;
+      if (!branch) {
+        const response = await fetch("/base.html");
+        html = await response.text();
+      } else {
+        const response = await fetch(
+          `https://raw.githubusercontent.com/${GITHUB_REPO}/${branch}/index.html`
+        );
+        html = await response.text();
+      }
+      window.__resiteSource = html;
+      // console.log(html);
+      // console.log(new DOMParser().parseFromString(html, "text/html"));
+      document.documentElement.innerHTML = new DOMParser().parseFromString(
+        html,
+        "text/html"
+      ).documentElement.outerHTML;
+      // Set event listener for #submit button
+      document.getElementById("submit").addEventListener("click", sendCommand);
+      // Set event listener for #input textarea (control/cmd + enter)
+      document.getElementById("input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          sendCommand();
+        }
+      });
+    }
+    setupPage();
+  </script>
+</html>

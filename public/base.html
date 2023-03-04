@@ -1,0 +1,44 @@
+<html lang="en">
+  <head>
+    <title>resite</title>
+    <style>
+      * {
+        font-family: sans-serif;
+      }
+      .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .input-row {
+        display: flex;
+        gap: 1rem;
+      }
+      .input-row > * {
+        border: 1px solid blueviolet;
+        background: none;
+        font-size: 1rem;
+        outline: none;
+      }
+      #input {
+        width: 300px;
+        resize: none;
+        padding: 0.75rem;
+      }
+      #submit {
+        cursor: pointer;
+        color: blueviolet;
+        padding: 0.75rem 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <div class="input-row">
+        <textarea rows="1" id="input"></textarea>
+        <button id="submit">resite</button>
+      </div>
+    </div>
+  </body>
+</html>
